@@ -1,0 +1,94 @@
+#!/usr/bin/env python3.6
+# This is the beginning of interaction with github. This was a long time ago so not sure how functional it is.
+from flask import Flask, request, jsonify
+import json
+import requests
+#from flask import Flask
+#from flask import json 
+#url='https://api.github.com/repos/uvoo/test/statuses/xxxxxxxxxxxxxxxxxxxxxx'
+token='xxxxxxxxxxxxxxxxxxx'
+headers = {'Authorization': 'token ' + token}
+
+# pull_request base, head
+
+class PR():
+
+    def __init__(self, payload):
+        self.payload = payload 
+        print(json.dumps(self.payload, indent=4, sort_keys=True))
+        self.organization = payload['organization']['login']
+        self.action = payload['action']
+        #self.before = payload['before']
+        #self.after = payload['after']
+        self.number = payload['number']
+        self.statuses_url = payload['pull_request']['_links']['statuses']['href'] 
+        #self.user_login = payload['user']['login'] 
+        self.sha = payload['pull_request']['head']['sha']
+        self.label = payload['pull_request']['head']['label']
+        self.updated_at = payload['pull_request']['head']['repo']['updated_at']
+        self.created_at = payload['pull_request']['head']['repo']['created_at']
+        #self.closed_at = payload['pull_request']['head']['repo']['closed_at']
+
+
+    def update_status(self):
+        #print(payload['action'])
+        #print(payload['pull_request']['_links']['statuses']['href'])
+        # organization = payload['organization'['login']
+        # action = payload['action']
+        # status_url = payload['pull_request']['_links']['statuses']['href']
+        # error, failure, pending, or success.
+        state = 'pending' 
+        description = 'One Integration tests are running!' 
+        # payload = {
+        #               'state': 'pending',
+        #               'target_url': 'https:/example.com/build/status',
+        #               'description': 'Integration tests are running!',
+        #               'context': 'continuous-integration/example-ci'
+        #           }
+
+        payload = {
+                      'state': state,
+                      'target_url': 'https://example.com/build/status',
+                      'description': description,
+                      'context': 'continuous-integration/example-ci'
+                  }
+
+        res = requests.post(self.statuses_url, headers=headers, json=self.payload)
+        if res.ok:
+            print(res)
+            print(res.json())
+        else:
+            print(f"ERROR! response {res}")
+
+
+app = Flask(__name__)
+
+@app.route('/ci-github')
+#@app.route('/a/ci-github')
+def hello_world():
+    return 'Hello, World!'
+
+@app.route('/api/ci-github2')
+#@app.route('/a/ci-github')
+def hello_world2():
+    return 'Hello, World!'
+
+@app.route('/api/ci-github', methods=['GET', 'POST'])
+def postJsonHandler():
+    #print (request.is_json)
+    #content = request.get_json(silent=True)
+    payload = request.get_json()
+    a = PR(payload)
+    # print (content)
+    # print(json.dumps(content, indent=4, sort_keys=True))
+    #return jsonify({"uuid":3})
+    #return jsonify(content)
+    #status_url = payload['pull_request']['_links']['statuses']['href']
+    #print(status_url)
+    a.update_status()
+    return jsonify({"status":1})
+    
+
+
+if __name__ == '__main__':
+      app.run(host='0.0.0.0', port=443, debug=True)
